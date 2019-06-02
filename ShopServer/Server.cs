@@ -85,7 +85,9 @@ namespace ShopServer
             string[] customerInfo = Encoding.UTF8.GetString(Buffer).Split(':');
             string customerName = customerInfo[0];
             long customerBalance = long.Parse(customerInfo[1]);
+            Console.ForegroundColor = ConsoleColor.Magenta;
             Console.WriteLine($"Пришёл {customerName}, у него {customerBalance} денег.");
+            Console.ResetColor();
 
             while (client.Connected)
             {
@@ -112,7 +114,9 @@ namespace ShopServer
                         answer = ProductHandler.SerializeProductList(Products);
                         break;
                     default:
+                        Console.ForegroundColor = ConsoleColor.Cyan;
                         Console.WriteLine($"{customerName} желает приобрести {customerAction}, {customerQuantity} штук.");
+                        Console.ResetColor();
                         int productsBought = 0;
                         if (ProductHandler.FindProduct(Products, customerAction) == null)
                         {
@@ -135,12 +139,16 @@ namespace ShopServer
                                     reason = "товар закончился";
                                     break;
                                 }
+                                Console.ForegroundColor = ConsoleColor.Yellow;
                                 Console.WriteLine($"{customerName} начинает покупку {customerAction}.");
+                                Console.ResetColor();
                                 customerBalance -= product.price;
                                 product.quantity--;
                                 productsBought++;
                                 Thread.Sleep(10000);
+                                Console.ForegroundColor = ConsoleColor.Green;
                                 Console.WriteLine($"{customerName} совершил{(customerName[customerName.Length - 1] == 'а' ? "a" : "")} покупку {customerAction}.\n");
+                                Console.ResetColor();
                             }
                         }
                         answer = $"{productsBought}:{reason}";
@@ -148,7 +156,9 @@ namespace ShopServer
                 }
                 client.GetStream().Write(Encoding.UTF8.GetBytes(answer));
             }
+            Console.ForegroundColor = ConsoleColor.Red;
             Console.WriteLine($"{customerName} ушёл.");
+            Console.ResetColor();
             client.Close();
             ns.Close();
             sem.Release();
