@@ -40,7 +40,7 @@ namespace ShopClient
             ns.Read(Buffer, 0, Buffer.Length);
             if (Encoding.UTF8.GetString(Buffer).Trim((char)0) == "Ok")
             {
-                Console.WriteLine("Вы в магазине. Чтобы посмотреть список товаров, наберите \"список\"");
+                Console.WriteLine("Вы в магазине. Чтобы посмотреть список товаров, наберите \"список\".");
             }
 
             string command;
@@ -55,6 +55,7 @@ namespace ShopClient
                         ns.Read(Buffer, 0, Buffer.Length);
                         List<Product> products = ProductHandler.DeserializeProductList(Encoding.UTF8.GetString(Buffer));
                         ProductHandler.PrintProductList(products);
+                        Console.WriteLine("Чтобы что-то купить, наберите \"купить\".");
                         break;
                     case "купить":
                         Console.WriteLine("Что хотите приобрести?");
@@ -82,7 +83,7 @@ namespace ShopClient
                     case "exit":
                         break;
                     default:
-                        Console.WriteLine("Неизвестная команда");
+                        Console.WriteLine("Неизвестная команда.");
                         break;
                 }
             } while (command != "exit");
