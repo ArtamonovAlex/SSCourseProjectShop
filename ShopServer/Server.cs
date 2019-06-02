@@ -1,10 +1,11 @@
-﻿using ShopLib;
-using System;
+﻿using System;
 using System.Collections.Generic;
+using System.IO;
 using System.Net;
 using System.Net.Sockets;
 using System.Text;
 using System.Threading;
+using ShopLib;
 
 namespace ShopServer
 {
@@ -17,12 +18,12 @@ namespace ShopServer
         {
             Products = new List<Product>();
             Listener = new TcpListener(IPAddress.Any, Port);
-            ThreadPool.QueueUserWorkItem(new WaitCallback(ListenerThread), Listener);
+            new Thread(ListenerThread).Start(Listener);
             string command;
             do
             {
                 command = Console.ReadLine();
-                switch(command)
+                switch (command)
                 {
                     case "добавить":
                         Console.WriteLine("Введите наименование товара:");
@@ -58,6 +59,11 @@ namespace ShopServer
             }
         }
 
+        private void HandlePurchaseThread(Object StateInfo)
+        {
+
+        }
+
         private void ClientThread(Object StateInfo)
         {
             TcpClient client = (TcpClient)StateInfo;
@@ -71,25 +77,29 @@ namespace ShopServer
 
             while (client.Connected)
             {
-                if (ns.DataAvailable)
+                try
                 {
                     ns.Read(Buffer, 0, Buffer.Length);
-                    string[] customerMessage = Encoding.UTF8.GetString(Buffer).Split(':');
-                    string customerAction = customerMessage[0];
-                    long customerQuantity = long.Parse(customerMessage[1]);
-                    string answer;
-                    switch (customerAction)
-                    {
-                        case "список":
-                            answer = ProductHandler.SerializeProductList(Products);
-                            break;
-                        default:
-                            answer = "Неизвестная команда";
-                            break;
-                    }
-                    client.GetStream().Write(Encoding.UTF8.GetBytes(answer));
+                } catch (IOException ex) when (ex.InnerException.GetType().Equals(typeof(SocketException)) && ((SocketException)ex.InnerException).ErrorCode == 10053)
+                {
+                    continue;
                 }
+                string[] customerMessage = Encoding.UTF8.GetString(Buffer).Split(':');
+                string customerAction = customerMessage[0];
+                long customerQuantity = long.Parse(customerMessage[1]);
+                string answer;
+                switch (customerAction)
+                {
+                    case "список":
+                        answer = ProductHandler.SerializeProductList(Products);
+                        break;
+                    default:
+                        answer = "Неизвестная команда";
+                        break;
+                }
+                client.GetStream().Write(Encoding.UTF8.GetBytes(answer));
             }
+            Console.WriteLine($"{customerName} ушёл.");
             client.Close();
             ns.Close();
         }
@@ -100,11 +110,18 @@ namespace ShopServer
             listener.Start();
             Console.WriteLine("Listener started");
             int counter = 1;
-
-            while (true)
+            bool isServerRunning = true;
+            while (isServerRunning)
             {
-                ThreadPool.QueueUserWorkItem(new WaitCallback(ClientThread), listener.AcceptTcpClient());
-                Console.WriteLine("Got client " + counter++);
+                try
+                {
+                    new Thread(ClientThread).Start(listener.AcceptTcpClient());
+                    Console.WriteLine("Got client " + counter++);
+                }
+                catch (SocketException ex) when (ex.ErrorCode == 10004)
+                {
+                    isServerRunning = false;
+                }
             }
         }
     }
