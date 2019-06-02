@@ -28,5 +28,19 @@ namespace ShopLib
         {
             return JsonConvert.DeserializeObject<List<Product>>(products);
         }
+
+        public static Product FindProduct(List<Product> products, string productName)
+        {
+            Product foundedProduct = null;
+            foreach(Product product in products)
+            {
+                if (product.name == productName)
+                {
+                    foundedProduct = product;
+                    break;
+                }
+            }
+            return foundedProduct;
+        }
     }
 }
