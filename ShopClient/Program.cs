@@ -35,6 +35,12 @@ namespace ShopClient
             NetworkStream ns = client.GetStream();
             byte[] Buffer = new byte[256];
             ns.Write(Encoding.UTF8.GetBytes($"{customerName}:{customerBalance}"));
+            Console.WriteLine("Ждём очередь...");
+            ns.Read(Buffer, 0, Buffer.Length);
+            if (Encoding.UTF8.GetString(Buffer).Trim((char)0) == "Ok")
+            {
+                Console.WriteLine("Вы в магазине. Чтобы посмотреть списко товаров, наберите \"список\"");
+            }
 
             string command;
             do

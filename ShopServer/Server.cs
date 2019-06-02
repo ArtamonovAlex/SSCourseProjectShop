@@ -13,6 +13,7 @@ namespace ShopServer
     {
         private TcpListener Listener;
         private List<Product> Products;
+        private static Semaphore sem = new Semaphore(3, 3);
 
         public Server(int Port)
         {
@@ -66,10 +67,12 @@ namespace ShopServer
 
         private void ClientThread(Object StateInfo)
         {
+            sem.WaitOne();
             TcpClient client = (TcpClient)StateInfo;
             NetworkStream ns = client.GetStream();
             byte[] Buffer = new byte[256];
             ns.Read(Buffer, 0, Buffer.Length);
+            ns.Write(Encoding.UTF8.GetBytes("Ok"));
             string[] customerInfo = Encoding.UTF8.GetString(Buffer).Split(':');
             string customerName = customerInfo[0];
             long customerBalance = long.Parse(customerInfo[1]);
@@ -84,6 +87,7 @@ namespace ShopServer
                 {
                     continue;
                 }
+
                 string[] customerMessage = Encoding.UTF8.GetString(Buffer).Split(':');
                 string customerAction = customerMessage[0];
                 long customerQuantity = long.Parse(customerMessage[1]);
@@ -102,6 +106,7 @@ namespace ShopServer
             Console.WriteLine($"{customerName} ушёл.");
             client.Close();
             ns.Close();
+            sem.Release();
         }
 
         private void ListenerThread(Object StateInfo)
@@ -115,7 +120,9 @@ namespace ShopServer
             {
                 try
                 {
+                    sem.WaitOne();
                     new Thread(ClientThread).Start(listener.AcceptTcpClient());
+                    sem.Release();
                     Console.WriteLine("Got client " + counter++);
                 }
                 catch (SocketException ex) when (ex.ErrorCode == 10004)
