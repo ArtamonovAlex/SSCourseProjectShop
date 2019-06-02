@@ -42,8 +42,17 @@ namespace ShopServer
                         {
                             Console.WriteLine($"Ожидалось целое число\nВведите количество товара {productName}:");
                         }
-                        Products.Add(new Product(productName, productPrice, productQuantity));
-                        Console.WriteLine($"Товар {productName} успешно добавлен, чтобы увидеть весь список товаров наберите \"список\"");
+                        if (ProductHandler.FindProduct(Products, productName) == null)
+                        {
+                            Products.Add(new Product(productName, productPrice, productQuantity));
+                            Console.WriteLine($"Товар {productName} успешно добавлен, чтобы увидеть весь список товаров наберите \"список\"");
+                        } else
+                        {
+                            Product product = ProductHandler.FindProduct(Products, productName);
+                            product.price = productPrice;
+                            product.quantity = productQuantity;
+                            Console.WriteLine($"Товар {productName} успешно изменён, чтобы увидеть весь список товаров наберите \"список\"");
+                        }
                         break;
                     case "список":
                         ProductHandler.PrintProductList(Products);
