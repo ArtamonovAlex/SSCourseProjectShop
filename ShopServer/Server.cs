@@ -14,7 +14,6 @@ namespace ShopServer
         private TcpListener Listener;
         private List<Product> Products;
         private static Semaphore sem = new Semaphore(3, 3);
-        private object locker = new object();
 
         public Server(int Port)
         {
@@ -42,16 +41,20 @@ namespace ShopServer
                         {
                             Console.WriteLine($"Ожидалось целое число\nВведите количество товара {productName}:");
                         }
-                        if (ProductHandler.FindProduct(Products, productName) == null)
+                        lock (Products)
                         {
-                            Products.Add(new Product(productName, productPrice, productQuantity));
-                            Console.WriteLine($"Товар {productName} успешно добавлен, чтобы увидеть весь список товаров наберите \"список\"");
-                        } else
-                        {
-                            Product product = ProductHandler.FindProduct(Products, productName);
-                            product.price = productPrice;
-                            product.quantity = productQuantity;
-                            Console.WriteLine($"Товар {productName} успешно изменён, чтобы увидеть весь список товаров наберите \"список\"");
+                            if (ProductHandler.FindProduct(Products, productName) == null)
+                            {
+                                Products.Add(new Product(productName, productPrice, productQuantity));
+                                Console.WriteLine($"Товар {productName} успешно добавлен, чтобы увидеть весь список товаров наберите \"список\"");
+                            }
+                            else
+                            {
+                                Product product = ProductHandler.FindProduct(Products, productName);
+                                product.price = productPrice;
+                                product.quantity = productQuantity;
+                                Console.WriteLine($"Товар {productName} успешно изменён, чтобы увидеть весь список товаров наберите \"список\"");
+                            }
                         }
                         break;
                     case "список":
@@ -117,7 +120,7 @@ namespace ShopServer
                             break;
                         }
                         string reason = "Ok";
-                        lock (locker)
+                        lock (Products)
                         {
                             Product product = ProductHandler.FindProduct(Products, customerAction);
                             while (productsBought < customerQuantity)
@@ -136,8 +139,8 @@ namespace ShopServer
                                 customerBalance -= product.price;
                                 product.quantity--;
                                 productsBought++;
-                                Thread.Sleep(5000);
-                                Console.WriteLine($"{customerName} совершил{(customerName[customerName.Length-1] == 'а' ? "a" : "")} покупку {customerAction}.\n");
+                                Thread.Sleep(10000);
+                                Console.WriteLine($"{customerName} совершил{(customerName[customerName.Length - 1] == 'а' ? "a" : "")} покупку {customerAction}.\n");
                             }
                         }
                         answer = $"{productsBought}:{reason}";
