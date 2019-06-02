@@ -33,13 +33,14 @@ namespace ShopClient
             }
 
             NetworkStream ns = client.GetStream();
+            byte[] clearBuffer = new byte[256];
             byte[] Buffer = new byte[256];
             ns.Write(Encoding.UTF8.GetBytes($"{customerName}:{customerBalance}"));
             Console.WriteLine("Ждём очередь...");
             ns.Read(Buffer, 0, Buffer.Length);
             if (Encoding.UTF8.GetString(Buffer).Trim((char)0) == "Ok")
             {
-                Console.WriteLine("Вы в магазине. Чтобы посмотреть списко товаров, наберите \"список\"");
+                Console.WriteLine("Вы в магазине. Чтобы посмотреть список товаров, наберите \"список\"");
             }
 
             string command;
@@ -50,9 +51,33 @@ namespace ShopClient
                 {
                     case "список":
                         ns.Write(Encoding.UTF8.GetBytes("список:0"));
+                        clearBuffer.CopyTo(Buffer,0);
                         ns.Read(Buffer, 0, Buffer.Length);
                         List<Product> products = ProductHandler.DeserializeProductList(Encoding.UTF8.GetString(Buffer));
                         ProductHandler.PrintProductList(products);
+                        break;
+                    case "купить":
+                        Console.WriteLine("Что хотите приобрести?");
+                        string productName = Console.ReadLine();
+                        Console.WriteLine("Сколько товара хотите приобрести?");
+                        int productQuantity;
+                        while(!int.TryParse(Console.ReadLine(), out productQuantity))
+                        {
+                            Console.WriteLine("Ожидалось целое число\nСколько товара хотите приобрести?");
+                        }
+                        ns.Write(Encoding.UTF8.GetBytes($"{productName}:{productQuantity}"));
+                        Console.WriteLine("Совершаем покупочки...");
+                        clearBuffer.CopyTo(Buffer, 0);
+                        ns.Read(Buffer,0,Buffer.Length);
+                        string[] response = Encoding.UTF8.GetString(Buffer).Split(':');
+                        Console.Write($"Вы купили {response[0]} из {productQuantity} желаемых единиц");
+                        if (response[1].Trim((char)0) == "Ok")
+                        {
+                            Console.WriteLine(".");
+                        } else
+                        {
+                            Console.WriteLine($", потому что {response[1].Trim((char)0)}.");
+                        }
                         break;
                     case "exit":
                         break;

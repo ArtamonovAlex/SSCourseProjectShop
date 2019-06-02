@@ -14,6 +14,7 @@ namespace ShopServer
         private TcpListener Listener;
         private List<Product> Products;
         private static Semaphore sem = new Semaphore(3, 3);
+        private object locker = new object();
 
         public Server(int Port)
         {
@@ -60,11 +61,6 @@ namespace ShopServer
             }
         }
 
-        private void HandlePurchaseThread(Object StateInfo)
-        {
-
-        }
-
         private void ClientThread(Object StateInfo)
         {
             byte[] clearBuffer = new byte[256];
@@ -83,9 +79,10 @@ namespace ShopServer
             {
                 try
                 {
-                    clearBuffer.CopyTo(Buffer,0);
+                    clearBuffer.CopyTo(Buffer, 0);
                     ns.Read(Buffer, 0, Buffer.Length);
-                } catch (IOException ex) when (ex.InnerException.GetType().Equals(typeof(SocketException)) && ((SocketException)ex.InnerException).ErrorCode == 10053)
+                }
+                catch (IOException ex) when (ex.InnerException.GetType().Equals(typeof(SocketException)) && ((SocketException)ex.InnerException).ErrorCode == 10053)
                 {
                     break;
                 }
@@ -103,7 +100,38 @@ namespace ShopServer
                         answer = ProductHandler.SerializeProductList(Products);
                         break;
                     default:
-                        answer = "Неизвестная команда";
+                        Console.WriteLine($"{customerName} желает приобрести {customerAction}, {customerQuantity} штук.");
+                        int productsBought = 0;
+                        if (ProductHandler.FindProduct(Products, customerAction) == null)
+                        {
+                            answer = $"{productsBought}:товар отсутствует";
+                            break;
+                        }
+                        string reason = "Ok";
+                        lock (locker)
+                        {
+                            Product product = ProductHandler.FindProduct(Products, customerAction);
+                            while (productsBought < customerQuantity)
+                            {
+                                if (product.price > customerBalance)
+                                {
+                                    reason = "недостаточно средств";
+                                    break;
+                                }
+                                if (product.quantity == 0)
+                                {
+                                    reason = "товар закончился";
+                                    break;
+                                }
+                                Console.WriteLine($"{customerName} начинает покупку {customerAction}.");
+                                customerBalance -= product.price;
+                                product.quantity--;
+                                productsBought++;
+                                Thread.Sleep(5000);
+                                Console.WriteLine($"{customerName} совершил{(customerName[customerName.Length-1] == 'а' ? "a" : "")} покупку {customerAction}.\n");
+                            }
+                        }
+                        answer = $"{productsBought}:{reason}";
                         break;
                 }
                 client.GetStream().Write(Encoding.UTF8.GetBytes(answer));
