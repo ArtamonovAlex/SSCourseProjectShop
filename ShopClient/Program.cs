@@ -11,17 +11,27 @@ namespace ShopClient
     {
         static void Main(string[] args)
         {
+            TcpClient client = new TcpClient();
+            try
+            {
+                client.Connect("127.0.0.1", 80);
+            }
+            catch (SocketException ex) when (ex.ErrorCode == 10061)
+            {
+                Console.WriteLine("Магазин закрыт. Приходите позже.");
+                return;
+            }
+
             Console.WriteLine("Представьтесь:");
             string customerName = Console.ReadLine();
 
             Console.WriteLine("Сколько у вас денег?");
             long customerBalance;
-            while(!long.TryParse(Console.ReadLine(), out customerBalance)) {
+            while (!long.TryParse(Console.ReadLine(), out customerBalance))
+            {
                 Console.WriteLine("Ожидалось целое число\nСколько у вас денег?");
             }
 
-            TcpClient client = new TcpClient();
-            client.Connect("127.0.0.1", 80);
             NetworkStream ns = client.GetStream();
             byte[] Buffer = new byte[256];
             ns.Write(Encoding.UTF8.GetBytes($"{customerName}:{customerBalance}"));
@@ -30,7 +40,7 @@ namespace ShopClient
             do
             {
                 command = Console.ReadLine();
-                switch(command)
+                switch (command)
                 {
                     case "список":
                         ns.Write(Encoding.UTF8.GetBytes("список:0"));
