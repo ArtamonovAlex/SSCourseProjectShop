@@ -67,6 +67,7 @@ namespace ShopServer
 
         private void ClientThread(Object StateInfo)
         {
+            byte[] clearBuffer = new byte[256];
             sem.WaitOne();
             TcpClient client = (TcpClient)StateInfo;
             NetworkStream ns = client.GetStream();
@@ -82,15 +83,19 @@ namespace ShopServer
             {
                 try
                 {
+                    clearBuffer.CopyTo(Buffer,0);
                     ns.Read(Buffer, 0, Buffer.Length);
                 } catch (IOException ex) when (ex.InnerException.GetType().Equals(typeof(SocketException)) && ((SocketException)ex.InnerException).ErrorCode == 10053)
                 {
-                    continue;
+                    break;
                 }
-
+                if (Buffer[0] == 0)
+                {
+                    break;
+                }
                 string[] customerMessage = Encoding.UTF8.GetString(Buffer).Split(':');
                 string customerAction = customerMessage[0];
-                long customerQuantity = long.Parse(customerMessage[1]);
+                int customerQuantity = int.Parse(customerMessage[1]);
                 string answer;
                 switch (customerAction)
                 {
