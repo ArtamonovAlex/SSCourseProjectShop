@@ -86,7 +86,7 @@ namespace ShopServer
             string customerName = customerInfo[0];
             long customerBalance = long.Parse(customerInfo[1]);
             Console.ForegroundColor = ConsoleColor.Magenta;
-            Console.WriteLine($"Пришёл {customerName}, у него {customerBalance} денег.");
+            Console.WriteLine($"Приш{(customerName[customerName.Length - 1] == 'а' ? "лa" : "ёл")} {customerName}, у н{(customerName[customerName.Length - 1] == 'а' ? "её" : "его")} {customerBalance} денег.");
             Console.ResetColor();
 
             while (client.Connected)
@@ -157,7 +157,7 @@ namespace ShopServer
                 client.GetStream().Write(Encoding.UTF8.GetBytes(answer));
             }
             Console.ForegroundColor = ConsoleColor.Red;
-            Console.WriteLine($"{customerName} ушёл.");
+            Console.WriteLine($"{customerName} уш{(customerName[customerName.Length - 1] == 'а' ? "лa" : "ёл")}.");
             Console.ResetColor();
             client.Close();
             ns.Close();
